@@ -23,15 +23,30 @@ class BrookesScraper:
         browser.go(BOOKING_URL)
 
         # click "Headington Climb"
-        fill_value("1", "ctl00$MainContent$activityGroupsGrid$ctrl1$lnkListCommand", "")
-        browser.submit()
+        click("1", "ctl00$MainContent$activityGroupsGrid$ctrl1$lnkListCommand")
 
         soup = BeautifulSoup(browser.html, "html.parser")
-        return [tag["value"] for tag in soup.find_all("input", value=lambda x: x and x.startswith(day))]
+        slots = []
+        for tag in soup.find_all("input", value=lambda x: x and x.lower().startswith(day.lower())):
+            id = tag["id"]
+            click("1", id)
+            soup = BeautifulSoup(browser.html, "html.parser")
+            h4 = soup.find_all('h4', recursive=True)
+            tidy_h4_text = [h.get_text().strip() for h in h4]
+            dates = list(filter(lambda a: a and a.lower().startswith(day.lower()), tidy_h4_text))
+            slots += dates
+            # go back
+            browser.go(BOOKING_URL)
+            click("1", "ctl00$MainContent$activityGroupsGrid$ctrl1$lnkListCommand")
+
+        return sorted(slots)
 
 
 
 
+def click(form_id, button_id):
+    fill_value(form_id, button_id, "")
+    browser.submit()
 
 if __name__ == "__main__":
     load_dotenv()
@@ -51,10 +66,22 @@ if __name__ == "__main__":
     # essentially click "Make a Booking"
     browser.go(BOOKING_URL)
     # click "Headington Climb"
-    fill_value("1", "ctl00$MainContent$activityGroupsGrid$ctrl1$lnkListCommand", "")
-    browser.submit()
+    click("1", "ctl00$MainContent$activityGroupsGrid$ctrl1$lnkListCommand")
 
     soup = BeautifulSoup(browser.html, "html.parser")
-    print([tag["value"] for tag in soup.find_all("input", value=lambda x: x and x.startswith("Thurs"))])
+    slots = []
+    for tag in soup.find_all("input", value=lambda x: x and x.startswith("Thurs")):
+        id = tag["id"]
+        click("1", id)
+        soup = BeautifulSoup(browser.html, "html.parser")
+        h4 = soup.find_all('h4', recursive=True)
+        tidy_h4_text = [h.get_text().strip() for h in h4]
+        dates = list(filter(lambda a: a and a.lower().startswith("thu"), tidy_h4_text))
+        slots += dates
+        # go back
+        browser.go(BOOKING_URL)
+        click("1", "ctl00$MainContent$activityGroupsGrid$ctrl1$lnkListCommand")
+
+    print(sorted(slots))
 
     # print(page.text)
