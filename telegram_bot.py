@@ -11,25 +11,23 @@ API_KEY = os.getenv("TELEGRAM-API-KEY")
 USER = os.getenv("BROOKES-USERNAME")
 PASSWORD = os.getenv("BROOKES-PASSWORD")
 bot = telebot.TeleBot(API_KEY)
-jobs = {}
 tracked_counts = {}
 
-@bot.message_handler(commands=['start'])
+@bot.message_handler(commands=['help', 'start'])
 def start(message):
-    bot.send_message(message.chat.id, "Hello you little climbing slut, missed a Brookes slot have we?")
+    print(message.text)
+    bot.send_message(message.chat.id, "Hello you little climbing slut, missed a Brookes slot have we?\nStart by listing the slots by clicking here:\n\
+/monday\n/tuesday\n/wednesday\n/thursday\n/friday\n/saturday\n/sunday")
+
 
 def slot_request(message):
     request = message.text.split()
     return len(request) >= 2 and request[1].lower() == "slots"
 
-@bot.message_handler(func=slot_request)
+@bot.message_handler(commands=['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'])
 def send_slots(message):
-    input = message.text.split()[0]
-    print(input)
+    input = message.text[1:]
     days_of_week = {'monday': 'mon' , 'tuesday': 'tue', 'wednesday': 'wed', 'thursday': 'thu', 'friday': 'fri', 'saturday': 'sat', 'sunday': 'sun'}
-    if input.lower() not in days_of_week:
-        bot.reply_to(message, "Please enter a day of the week. e.g. 'Thursday slots'")
-        return
     day = days_of_week[input.lower()]
     scraper = BrookesScraper(USER, PASSWORD)
     slots = scraper.get_slots_for_day(day)
@@ -52,19 +50,22 @@ def process_slot_choice(message, slots):
     bot.reply_to(message, f"Tracking {slots[slot_id]['date']} slot")
 
     sched = BackgroundScheduler()
-    sched.add_job(lambda: tracking_spaces_job(message, slots[slot_id]), 'interval', seconds=10)
+    slot_date = datetime.strptime(slots[slot_id]['date'], f"%a %d %b %Y, %H:%M")
+    sched.add_job(lambda: tracking_spaces_job(message, slots[slot_id]), 'interval', seconds=10, end_date=slot_date)
     sched.start()
-    jobs[slots[slot_id]['date']] = sched
 
 def tracking_spaces_job(message, slot):
     scraper = BrookesScraper(USER, PASSWORD)
     space_count = scraper.get_space_count_for_slot(slot)
 
     slot_date = datetime.strptime(slot['date'], f"%a %d %b %Y, %H:%M")
-    if slot_date < datetime.now() and slot['date'] in jobs:
-        jobs[slot['date']].shutdown()
-        del jobs[slot['date']]
-        del tracked_counts[slot['date']]
+    if slot_date < datetime.now() and slot['date'] in tracked_counts:
+        try:
+            del tracked_counts[slot['date']]
+            bot.send_message(message.chat.id, f"Stopped tracking {slot['date']} slot")
+            return
+        except RuntimeError:
+            bot.send_message(message.chat.id, f"Could not stop tracking process for {slot['date']}")
 
     if slot['date'] not in tracked_counts:
         tracked_counts[slot['date']] = space_count
