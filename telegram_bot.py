@@ -11,7 +11,7 @@ API_KEY = os.getenv("TELEGRAM-API-KEY")
 USER = os.getenv("BROOKES-USERNAME")
 PASSWORD = os.getenv("BROOKES-PASSWORD")
 bot = telebot.TeleBot(API_KEY)
-tracked_counts = {}
+tracked_counts_all_chats = {}
 
 @bot.message_handler(commands=['help', 'start'])
 def start(message):
@@ -57,6 +57,7 @@ def process_slot_choice(message, slots):
 def tracking_spaces_job(message, slot):
     scraper = BrookesScraper(USER, PASSWORD)
     space_count = scraper.get_space_count_for_slot(slot)
+    tracked_counts = tracked_counts_all_chats[message.chat.id] if message.chat.id in tracked_counts_all_chats else {}
 
     slot_date = datetime.strptime(slot['date'], f"%a %d %b %Y, %H:%M")
     if slot_date < datetime.now() and slot['date'] in tracked_counts:
@@ -72,6 +73,7 @@ def tracking_spaces_job(message, slot):
     if tracked_counts[slot['date']] != space_count:
         tracked_counts[slot['date']] = space_count
         bot.send_message(message.chat.id, f"Tracking {slot['date']} slot\nCurrently {space_count} spaces available")
+    tracked_counts_all_chats[message.chat.id] = tracked_counts
 
 bot.polling()
 
