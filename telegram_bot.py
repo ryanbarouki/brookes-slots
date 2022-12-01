@@ -10,6 +10,7 @@ load_dotenv()
 API_KEY = os.getenv("TELEGRAM-API-KEY")
 USER = os.getenv("BROOKES-USERNAME")
 PASSWORD = os.getenv("BROOKES-PASSWORD")
+PROCESSING_SLOT = False
 bot = telebot.TeleBot(API_KEY)
 tracked_counts_all_chats = {}
 
@@ -26,7 +27,11 @@ def slot_request(message):
 
 @bot.message_handler(commands=['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'])
 def send_slots(message):
-    input = message.text[1:]
+    global PROCESSING_SLOT
+    if PROCESSING_SLOT:
+        return
+    PROCESSING_SLOT = True
+    input = message.text[1:].split("@")[0]
     days_of_week = {'monday': 'mon' , 'tuesday': 'tue', 'wednesday': 'wed', 'thursday': 'thu', 'friday': 'fri', 'saturday': 'sat', 'sunday': 'sun'}
     day = days_of_week[input.lower()]
     scraper = BrookesScraper(USER, PASSWORD)
@@ -40,6 +45,7 @@ def send_slots(message):
     bot.register_next_step_handler(msg, lambda message: process_slot_choice(message, slots))
 
 def process_slot_choice(message, slots):
+    global PROCESSING_SLOT
     reply = message.text
     try:
         slot_id = int(reply) - 1
@@ -50,13 +56,19 @@ def process_slot_choice(message, slots):
         slot_date = datetime.strptime(slots[slot_id]['date'], f"%a %d %b %Y, %H:%M")
         sched.add_job(lambda: tracking_spaces_job(message, slots[slot_id]), 'interval', seconds=10, end_date=slot_date)
         sched.start()
+        PROCESSING_SLOT = False
     except ValueError:
         msg = bot.reply_to(message, "Not a valid slot choice, please input a number")
         bot.register_next_step_handler(msg, lambda message: process_slot_choice(message, slots))
 
 def tracking_spaces_job(message, slot):
     scraper = BrookesScraper(USER, PASSWORD)
-    space_count = scraper.get_space_count_for_slot(slot)
+    try:
+        space_count = scraper.get_space_count_for_slot(slot)
+    except:
+        bot.send_message(message.chat.id, f"One at a time please!")
+        return
+
     tracked_counts = tracked_counts_all_chats[message.chat.id] if message.chat.id in tracked_counts_all_chats else {}
 
     slot_date = datetime.strptime(slot['date'], f"%a %d %b %Y, %H:%M")
