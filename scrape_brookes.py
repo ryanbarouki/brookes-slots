@@ -35,8 +35,9 @@ class BrookesScraper:
                 slot = {"id": id, "button_id": button_id, "date": dates[i], "status": availability}
                 slots.append(slot)
             # go back
-            browser.go(BrookesScraper.BOOKING_URL)
-            click("1", "ctl00$MainContent$activityGroupsGrid$ctrl1$lnkListCommand")
+            browser.back() 
+            # browser.go(BrookesScraper.BOOKING_URL)
+            # click("1", "ctl00$MainContent$activityGroupsGrid$ctrl1$lnkListCommand")
 
         return sorted(slots, key=lambda x: x['date'])
 
