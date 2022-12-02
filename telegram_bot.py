@@ -11,9 +11,17 @@ API_KEY = os.getenv("TELEGRAM-API-KEY")
 USER = os.getenv("BROOKES-USERNAME")
 PASSWORD = os.getenv("BROOKES-PASSWORD")
 PROCESSING_SLOT = False
+TRACKING_SPACES = False
+INTERVAL = 10
 sched = BackgroundScheduler()
 bot = telebot.TeleBot(API_KEY)
 tracked_counts_all_chats = {}
+
+@bot.message_handler(commands=['reset'])
+def restart(message):
+    sched.remove_all_jobs()
+    tracked_counts_all_chats.clear()
+    bot.reply_to(message, "Resetting the bot")
 
 @bot.message_handler(commands=['help', 'start'])
 def start(message):
@@ -49,22 +57,32 @@ def process_slot_choice(message, slots):
     reply = message.text
     try:
         slot_id = int(reply) - 1
+        if slot_id < 0 or slot_id >= len(slots):
+            msg = bot.reply_to(message, "Not a valid slot choice!")
+            bot.register_next_step_handler(msg, lambda message: process_slot_choice(message, slots))
+            return
+
         tracking_spaces_job(message, slots[slot_id])
 
         bot.reply_to(message, f"Tracking {slots[slot_id]['date']} slot")
         slot_date = datetime.strptime(slots[slot_id]['date'], f"%a %d %b %Y, %H:%M")
-        sched.add_job(lambda: tracking_spaces_job(message, slots[slot_id]), 'interval', seconds=10, end_date=slot_date)
+        sched.add_job(lambda: tracking_spaces_job(message, slots[slot_id]), 'interval', seconds=INTERVAL, end_date=slot_date)
         PROCESSING_SLOT = False
     except ValueError:
         msg = bot.reply_to(message, "Not a valid slot choice, please input a number")
         bot.register_next_step_handler(msg, lambda message: process_slot_choice(message, slots))
 
 def tracking_spaces_job(message, slot):
+    global TRACKING_SPACES
+    if TRACKING_SPACES:
+        return
+    TRACKING_SPACES = True
     scraper = BrookesScraper(USER, PASSWORD)
     try:
         space_count = scraper.get_space_count_for_slot(slot)
     except:
-        bot.send_message(message.chat.id, f"One at a time please!")
+        bot.send_message(message.chat.id, f"Ahhh too much going on at once!")
+        TRACKING_SPACES = False
         return
 
     tracked_counts = tracked_counts_all_chats[message.chat.id] if message.chat.id in tracked_counts_all_chats else {}
@@ -74,6 +92,7 @@ def tracking_spaces_job(message, slot):
         try:
             del tracked_counts[slot['date']]
             bot.send_message(message.chat.id, f"Stopped tracking {slot['date']} slot")
+            TRACKING_SPACES = False
             return
         except RuntimeError:
             bot.send_message(message.chat.id, f"Could not stop tracking process for {slot['date']}")
@@ -84,6 +103,7 @@ def tracking_spaces_job(message, slot):
         tracked_counts[slot['date']] = space_count
         bot.send_message(message.chat.id, f"Tracking {slot['date']} slot\nCurrently {space_count} spaces available")
     tracked_counts_all_chats[message.chat.id] = tracked_counts
+    TRACKING_SPACES = False
 
 sched.start()
 bot.polling()
