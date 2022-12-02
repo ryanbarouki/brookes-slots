@@ -11,12 +11,12 @@ API_KEY = os.getenv("TELEGRAM-API-KEY")
 USER = os.getenv("BROOKES-USERNAME")
 PASSWORD = os.getenv("BROOKES-PASSWORD")
 PROCESSING_SLOT = False
+sched = BackgroundScheduler()
 bot = telebot.TeleBot(API_KEY)
 tracked_counts_all_chats = {}
 
 @bot.message_handler(commands=['help', 'start'])
 def start(message):
-    print(message.text)
     bot.send_message(message.chat.id, "Hello you little climbing slut, missed a Brookes slot have we?\nStart by listing the slots by clicking here:\n\
 /monday\n/tuesday\n/wednesday\n/thursday\n/friday\n/saturday\n/sunday")
 
@@ -52,10 +52,8 @@ def process_slot_choice(message, slots):
         tracking_spaces_job(message, slots[slot_id])
 
         bot.reply_to(message, f"Tracking {slots[slot_id]['date']} slot")
-        sched = BackgroundScheduler()
         slot_date = datetime.strptime(slots[slot_id]['date'], f"%a %d %b %Y, %H:%M")
         sched.add_job(lambda: tracking_spaces_job(message, slots[slot_id]), 'interval', seconds=10, end_date=slot_date)
-        sched.start()
         PROCESSING_SLOT = False
     except ValueError:
         msg = bot.reply_to(message, "Not a valid slot choice, please input a number")
@@ -87,5 +85,6 @@ def tracking_spaces_job(message, slot):
         bot.send_message(message.chat.id, f"Tracking {slot['date']} slot\nCurrently {space_count} spaces available")
     tracked_counts_all_chats[message.chat.id] = tracked_counts
 
+sched.start()
 bot.polling()
 
