@@ -49,12 +49,16 @@ def send_slots(message):
         return
     slot_string = reduce(lambda a, b: f"{a}\n{b}", [f'{i+1}. {slots[i]["date"]} - {slots[i]["status"]} spaces' for i in range(len(slots))])
     slot_msg = bot.send_message(message.chat.id, slot_string)
-    msg = bot.reply_to(slot_msg, "Which slot do you want to track?")
+    msg = bot.reply_to(slot_msg, "Which slot do you want to track? Reply 'none' to cancel")
     bot.register_next_step_handler(msg, lambda message: process_slot_choice(message, slots))
 
 def process_slot_choice(message, slots):
     global PROCESSING_SLOT
     reply = message.text
+    if reply.lower() == "none":
+        PROCESSING_SLOT = False
+        bot.reply_to(message, "Tracking cancelled")
+        return
     try:
         slot_id = int(reply) - 1
         if slot_id < 0 or slot_id >= len(slots):
