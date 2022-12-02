@@ -5,17 +5,29 @@ import telebot
 import os
 from scrape_brookes import BrookesScraper
 from apscheduler.schedulers.background import BackgroundScheduler
+from flask import Flask, request
 
 load_dotenv()
 API_KEY = os.getenv("TELEGRAM-API-KEY")
 USER = os.getenv("BROOKES-USERNAME")
 PASSWORD = os.getenv("BROOKES-PASSWORD")
+SECRET = os.getenv("SECRET")
 PROCESSING_SLOT = False
 TRACKING_SPACES = False
 INTERVAL = 10
+URL = f"https://yourherokuappname.herokuapp.com/{SECRET}"
 sched = BackgroundScheduler()
 bot = telebot.TeleBot(API_KEY)
+bot.remove_webhook()
+bot.set_webhook(url=URL)
 tracked_counts_all_chats = {}
+
+app = Flask(__name__)
+@app.route(f'/{SECRET}', methods=['POST'])
+def webhook():
+    update = telebot.types.Update.de_json(request.stream.read().decode('utf-8'))
+    bot.process_new_updates([update])
+    return 'ok',200
 
 @bot.message_handler(commands=['reset'])
 def restart(message):
