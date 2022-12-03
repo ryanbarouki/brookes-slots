@@ -15,6 +15,7 @@ PROCESSING_SLOT = False
 TRACKING_SPACES = False
 sched = BackgroundScheduler()
 bot = telebot.TeleBot(API_KEY)
+bot.set_webhook()
 tracked_counts_all_chats = {}
 
 @bot.message_handler(commands=['reset'])
