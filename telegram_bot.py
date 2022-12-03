@@ -121,5 +121,3 @@ def tracking_spaces_job(message, slot):
     TRACKING_SPACES = False
 
 sched.start()
-bot.polling()
-
