@@ -11,15 +11,15 @@ load_dotenv()
 API_KEY = os.getenv("TELEGRAM-API-KEY")
 USER = os.getenv("BROOKES-USERNAME")
 PASSWORD = os.getenv("BROOKES-PASSWORD")
+INTERVAL = os.getenv("INTERVAL")
 PROCESSING_SLOT = False
 TRACKING_SPACES = False
-INTERVAL = 10
 URL = f"https://brookes-bot.herokuapp.com/{API_KEY}"
 sched = BackgroundScheduler()
 bot = telebot.TeleBot(API_KEY)
 tracked_counts_all_chats = {}
-
 app = Flask(__name__)
+
 @app.route('/')
 def webhook():
     bot.remove_webhook()
