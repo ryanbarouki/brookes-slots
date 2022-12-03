@@ -89,9 +89,9 @@ def process_slot_choice(message, slots):
         tracking_spaces_job(message, slots[slot_id])
 
         bot.reply_to(message, f"Tracking {slots[slot_id]['date']} slot")
+        PROCESSING_SLOT = False
         slot_date = datetime.strptime(slots[slot_id]['date'], f"%a %d %b %Y, %H:%M")
         sched.add_job(lambda: tracking_spaces_job(message, slots[slot_id]), 'interval', seconds=INTERVAL, end_date=slot_date)
-        PROCESSING_SLOT = False
     except ValueError:
         msg = bot.reply_to(message, "Not a valid slot choice, please input a number")
         bot.register_next_step_handler(msg, lambda message: process_slot_choice(message, slots))
