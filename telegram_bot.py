@@ -15,7 +15,7 @@ SECRET = os.getenv("SECRET")
 PROCESSING_SLOT = False
 TRACKING_SPACES = False
 INTERVAL = 10
-URL = f"https://yourherokuappname.herokuapp.com/{SECRET}"
+URL = f"https://brookes-bot.herokuapp.com/{SECRET}"
 sched = BackgroundScheduler()
 bot = telebot.TeleBot(API_KEY)
 bot.remove_webhook()
