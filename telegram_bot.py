@@ -35,6 +35,9 @@ def get_message():
 
 @bot.message_handler(commands=['reset'])
 def restart(message):
+    global PROCESSING_SLOT, TRACKING_SPACES
+    PROCESSING_SLOT = False
+    TRACKING_SPACES = False
     sched.remove_all_jobs()
     tracked_counts_all_chats.clear()
     bot.reply_to(message, "Resetting the bot")
@@ -53,6 +56,7 @@ def slot_request(message):
 def send_slots(message):
     global PROCESSING_SLOT
     if PROCESSING_SLOT:
+        print("Not executing command as PROCESSING_SLOT is True")
         return
     PROCESSING_SLOT = True
     input = message.text[1:].split("@")[0]
@@ -95,6 +99,7 @@ def process_slot_choice(message, slots):
 def tracking_spaces_job(message, slot):
     global TRACKING_SPACES
     if TRACKING_SPACES:
+        print("Not executing command as TRACKING_SPACES is True")
         return
     TRACKING_SPACES = True
     scraper = BrookesScraper(USER, PASSWORD)
