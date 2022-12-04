@@ -6,6 +6,7 @@ import os
 from scrape_brookes import BrookesScraper
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, request
+import boto3
 
 load_dotenv()
 API_KEY = os.getenv("TELEGRAM-API-KEY")
@@ -19,6 +20,8 @@ sched = BackgroundScheduler()
 bot = telebot.TeleBot(API_KEY)
 tracked_counts_all_chats = {}
 app = Flask(__name__)
+eventclient = boto3.client('events')
+Lambda = boto3.client('lambda')
 
 @app.route('/')
 def webhook():
@@ -39,6 +42,7 @@ def restart(message):
     PROCESSING_SLOT = False
     TRACKING_SPACES = False
     sched.remove_all_jobs()
+    # clear db with message.chat.id
     tracked_counts_all_chats.clear()
     bot.reply_to(message, "Resetting the bot")
 
@@ -86,12 +90,42 @@ def process_slot_choice(message, slots):
             bot.register_next_step_handler(msg, lambda message: process_slot_choice(message, slots))
             return
 
-        tracking_spaces_job(message, slots[slot_id])
+        # remove this
+        # tracking_spaces_job(message, slots[slot_id])
 
         bot.reply_to(message, f"Tracking {slots[slot_id]['date']} slot")
         PROCESSING_SLOT = False
         slot_date = datetime.strptime(slots[slot_id]['date'], f"%a %d %b %Y, %H:%M")
-        sched.add_job(lambda: tracking_spaces_job(message, slots[slot_id]), 'interval', seconds=INTERVAL, end_date=slot_date)
+
+        # We want to invoke an AWS lambda here to schedule the job
+        # we need to add a rule to EventBridge
+        # we need to write tracking_spaces_job as an aws lambda that will be scheduled
+        # also need another aws lamdba that will deal with the scheduling
+        # sched.add_job(lambda: tracking_spaces_job(message, slots[slot_id]), 'interval', seconds=INTERVAL, end_date=slot_date)
+        rule_name = "TestScheduler"
+        rule = eventclient.put_rule(Name=rule_name, ScheduleExpression='cron(0/1 * * * ? *')
+        permissionParams = {
+            'Action': 'lambda:InvokeFunction',
+            'FunctionName': 'ScrapeBrookes',
+            'Principal': 'events.amazonaws.com',
+            'StatementId': rule_name,
+            'SourceArn': rule['RuleArn'],
+        }
+
+        Lambda.add_permission(**permissionParams)
+
+        target_params = {
+            'Rule': rule_name,
+            'Targets': [
+                {
+                    'Id': f"{rule_name}-target",
+                    'Arn': 'arn:aws:lambda:us-east-1:151419854330:function:ScrapeBrookes',
+                    'Input': '{"data": "data for Scarpe Brookes"}'
+                }
+            ]
+        }
+
+        result = eventclient.put_targets(**target_params)
     except ValueError:
         msg = bot.reply_to(message, "Not a valid slot choice, please input a number")
         bot.register_next_step_handler(msg, lambda message: process_slot_choice(message, slots))
@@ -110,6 +144,7 @@ def tracking_spaces_job(message, slot):
         TRACKING_SPACES = False
         return
 
+    # grabbing counts from db
     tracked_counts = tracked_counts_all_chats[message.chat.id] if message.chat.id in tracked_counts_all_chats else {}
 
     slot_date = datetime.strptime(slot['date'], f"%a %d %b %Y, %H:%M")
