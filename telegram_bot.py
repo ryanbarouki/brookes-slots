@@ -20,8 +20,8 @@ sched = BackgroundScheduler()
 bot = telebot.TeleBot(API_KEY)
 tracked_counts_all_chats = {}
 app = Flask(__name__)
-eventclient = boto3.client('events')
-Lambda = boto3.client('lambda')
+eventclient = boto3.client('events', region_name='us-east-1')
+Lambda = boto3.client('lambda', region_name='us-east-1')
 
 @app.route('/')
 def webhook():
