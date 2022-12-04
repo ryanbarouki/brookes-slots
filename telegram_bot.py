@@ -20,8 +20,6 @@ sched = BackgroundScheduler()
 bot = telebot.TeleBot(API_KEY)
 tracked_counts_all_chats = {}
 app = Flask(__name__)
-eventclient = boto3.client('events', region_name='us-east-1')
-Lambda = boto3.client('lambda', region_name='us-east-1')
 
 @app.route('/')
 def webhook():
@@ -102,8 +100,10 @@ def process_slot_choice(message, slots):
         # we need to write tracking_spaces_job as an aws lambda that will be scheduled
         # also need another aws lamdba that will deal with the scheduling
         # sched.add_job(lambda: tracking_spaces_job(message, slots[slot_id]), 'interval', seconds=INTERVAL, end_date=slot_date)
+        event_client = boto3.client('events', region_name='us-east-1')
+        lambda_client = boto3.client('lambda', region_name='us-east-1')
         rule_name = "TestScheduler"
-        rule = eventclient.put_rule(Name=rule_name, ScheduleExpression='cron(0/1 * * * ? *')
+        rule = event_client.put_rule(Name=rule_name, ScheduleExpression='cron(0/1 * * * ? *')
         permissionParams = {
             'Action': 'lambda:InvokeFunction',
             'FunctionName': 'ScrapeBrookes',
@@ -112,7 +112,7 @@ def process_slot_choice(message, slots):
             'SourceArn': rule['RuleArn'],
         }
 
-        Lambda.add_permission(**permissionParams)
+        lambda_client.add_permission(**permissionParams)
 
         target_params = {
             'Rule': rule_name,
@@ -125,7 +125,7 @@ def process_slot_choice(message, slots):
             ]
         }
 
-        result = eventclient.put_targets(**target_params)
+        result = event_client.put_targets(**target_params)
         print(result)
     except ValueError:
         msg = bot.reply_to(message, "Not a valid slot choice, please input a number")
