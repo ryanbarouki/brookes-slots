@@ -126,6 +126,7 @@ def process_slot_choice(message, slots):
         }
 
         result = eventclient.put_targets(**target_params)
+        print(result)
     except ValueError:
         msg = bot.reply_to(message, "Not a valid slot choice, please input a number")
         bot.register_next_step_handler(msg, lambda message: process_slot_choice(message, slots))
