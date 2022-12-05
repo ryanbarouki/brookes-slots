@@ -13,6 +13,8 @@ API_KEY = os.getenv("TELEGRAM-API-KEY")
 USER = os.getenv("BROOKES-USERNAME")
 PASSWORD = os.getenv("BROOKES-PASSWORD")
 INTERVAL = os.getenv("INTERVAL")
+AWS_KEY = os.getenv("AWS-ACCESS-KEY")
+AWS_SECRET_KEY = os.getenv("AWS-SECRET-KEY")
 PROCESSING_SLOT = False
 TRACKING_SPACES = False
 URL = f"https://brookes-bot.herokuapp.com/{API_KEY}"
@@ -100,21 +102,18 @@ def process_slot_choice(message, slots):
         # we need to write tracking_spaces_job as an aws lambda that will be scheduled
         # also need another aws lamdba that will deal with the scheduling
         # sched.add_job(lambda: tracking_spaces_job(message, slots[slot_id]), 'interval', seconds=INTERVAL, end_date=slot_date)
-        event_client = boto3.client('events', region_name='us-east-1')
-        lambda_client = boto3.client('lambda', region_name='us-east-1')
-        iam_client = boto3.client('iam', region_name='us-east-1')
-
-        role = iam_client.create_role(
-            RoleName="foobar",
-            AssumeRolePolicyDocument={}
-        )["Role"]
+        event_client = boto3.client('events', region_name='us-east-1', 
+        aws_access_key_id=AWS_KEY,
+        aws_secret_access_key = AWS_SECRET_KEY)
+        lambda_client = boto3.client('lambda', region_name='us-east-1',
+        aws_access_key_id=AWS_KEY,
+        aws_secret_access_key = AWS_SECRET_KEY)
 
         rule_name = "TestScheduler"
         rule = event_client.put_rule(
             Name=rule_name, 
             ScheduleExpression='cron(0/1 * * * ? *',
             State='ENABLED',
-            RoleArn=role['Arn']
         )
         permissionParams = {
             'Action': 'lambda:InvokeFunction',
