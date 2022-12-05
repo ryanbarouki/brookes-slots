@@ -112,7 +112,7 @@ def process_slot_choice(message, slots):
         rule_name = "TestScheduler"
         rule = event_client.put_rule(
             Name=rule_name, 
-            ScheduleExpression='cron(0/1 * * * ? *',
+            ScheduleExpression='cron(0/1 * * * ? *)',
             State='ENABLED',
         )
         print("Printing rule!")
