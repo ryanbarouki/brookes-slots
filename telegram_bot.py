@@ -102,8 +102,20 @@ def process_slot_choice(message, slots):
         # sched.add_job(lambda: tracking_spaces_job(message, slots[slot_id]), 'interval', seconds=INTERVAL, end_date=slot_date)
         event_client = boto3.client('events', region_name='us-east-1')
         lambda_client = boto3.client('lambda', region_name='us-east-1')
+        iam_client = boto3.client('iam', region_name='us-east-1')
+
+        role = iam_client.create_role(
+            RoleName="foobar",
+            AssumeRolePolicyDocument={}
+        )["Role"]
+
         rule_name = "TestScheduler"
-        rule = event_client.put_rule(Name=rule_name, ScheduleExpression='cron(0/1 * * * ? *')
+        rule = event_client.put_rule(
+            Name=rule_name, 
+            ScheduleExpression='cron(0/1 * * * ? *',
+            State='ENABLED'
+            RoleArn=role['Arn']
+        )
         permissionParams = {
             'Action': 'lambda:InvokeFunction',
             'FunctionName': 'ScrapeBrookes',
