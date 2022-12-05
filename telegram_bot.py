@@ -115,6 +115,8 @@ def process_slot_choice(message, slots):
             ScheduleExpression='cron(0/1 * * * ? *',
             State='ENABLED',
         )
+        print("Printing rule!")
+        print(rule)
         permissionParams = {
             'Action': 'lambda:InvokeFunction',
             'FunctionName': 'ScrapeBrookes',
