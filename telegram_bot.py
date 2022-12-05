@@ -113,7 +113,7 @@ def process_slot_choice(message, slots):
         rule = event_client.put_rule(
             Name=rule_name, 
             ScheduleExpression='cron(0/1 * * * ? *',
-            State='ENABLED'
+            State='ENABLED',
             RoleArn=role['Arn']
         )
         permissionParams = {
