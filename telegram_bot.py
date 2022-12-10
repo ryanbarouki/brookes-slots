@@ -7,6 +7,7 @@ from scrape_brookes import BrookesScraper
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, request
 import boto3
+from botocore.exceptions import ClientError
 
 load_dotenv()
 API_KEY = os.getenv("TELEGRAM-API-KEY")
@@ -134,6 +135,8 @@ def process_slot_choice(message, slots):
     except ValueError:
         msg = bot.reply_to(message, "Not a valid slot choice, please input a number")
         bot.register_next_step_handler(msg, lambda message: process_slot_choice(message, slots))
+    except ClientError as err:
+        print(f"Couldn't create scheduler {rule_name}. Here's why: {err.response['Error']['Code']}: {err.response['Error']['Message']}")
 
 def tracking_spaces_job(message, slot):
     global TRACKING_SPACES
