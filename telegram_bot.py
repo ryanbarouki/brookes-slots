@@ -23,6 +23,13 @@ bot = telebot.TeleBot(API_KEY)
 tracked_counts_all_chats = {}
 app = Flask(__name__)
 
+session = boto3.Session(
+    aws_access_key_id=AWS_KEY,
+    aws_secret_access_key = AWS_SECRET_KEY
+)
+event_client = session.client('events', region_name='us-east-1')
+lambda_client = session.client('lambda', region_name='us-east-1')
+
 @app.route('/')
 def webhook():
     bot.remove_webhook()
@@ -90,36 +97,19 @@ def process_slot_choice(message, slots):
             bot.register_next_step_handler(msg, lambda message: process_slot_choice(message, slots))
             return
 
-        # remove this
-        # tracking_spaces_job(message, slots[slot_id])
-
         bot.reply_to(message, f"Tracking {slots[slot_id]['date']} slot")
         PROCESSING_SLOT = False
         slot_date = datetime.strptime(slots[slot_id]['date'], f"%a %d %b %Y, %H:%M")
 
-        # We want to invoke an AWS lambda here to schedule the job
-        # we need to add a rule to EventBridge
-        # we need to write tracking_spaces_job as an aws lambda that will be scheduled
-        # also need another aws lamdba that will deal with the scheduling
-        # sched.add_job(lambda: tracking_spaces_job(message, slots[slot_id]), 'interval', seconds=INTERVAL, end_date=slot_date)
-        session = boto3.Session(
-        aws_access_key_id=AWS_KEY,
-        aws_secret_access_key = AWS_SECRET_KEY
-        )
-        event_client = session.client('events', region_name='us-east-1')
-        lambda_client = session.client('lambda', region_name='us-east-1')
-
-        rule_name = "TestScheduler"
+        rule_name = slots[slot_id]['date']
         rule = event_client.put_rule(
             Name=rule_name, 
             ScheduleExpression='cron(0/1 * * * ? *)',
             State='ENABLED',
         )
-        print("Printing rule!")
-        print(rule)
         permissionParams = {
             'Action': 'lambda:InvokeFunction',
-            'FunctionName': 'ScrapeBrookes',
+            'FunctionName': 'test',
             'Principal': 'events.amazonaws.com',
             'StatementId': rule_name,
             'SourceArn': rule['RuleArn'],
@@ -132,7 +122,8 @@ def process_slot_choice(message, slots):
             'Targets': [
                 {
                     'Id': f"{rule_name}-target",
-                    'Arn': 'arn:aws:lambda:us-east-1:151419854330:function:ScrapeBrookes',
+                    'Arn': 'arn:aws:lambda:us-east-1:151419854330:function:test',
+                    # 'Arn': 'arn:aws:lambda:us-east-1:151419854330:function:ScrapeBrookes',
                     'Input': '{"data": "data for Scarpe Brookes"}'
                 }
             ]
