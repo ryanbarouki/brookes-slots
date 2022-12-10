@@ -102,7 +102,7 @@ def process_slot_choice(message, slots):
         PROCESSING_SLOT = False
         slot_date = datetime.strptime(slots[slot_id]['date'], f"%a %d %b %Y, %H:%M")
 
-        rule_name = slots[slot_id]['date']
+        rule_name = slots[slot_id]['date'].replace(" ", "-").replace(",", "-").replace(":","-")
         rule = event_client.put_rule(
             Name=rule_name, 
             ScheduleExpression='cron(0/1 * * * ? *)',
