@@ -43,17 +43,17 @@ def get_count(table_name, date):
 
 
 
-def track_spaces(message, slot):
+def track_spaces(chat_id, slot):
 
     scraper = BrookesScraper(USER, PASSWORD)
     try:
         space_count = scraper.get_space_count_for_slot(slot)
     except:
-        bot.send_message(message.chat.id, f"Ahhh too much going on at once!")
+        bot.send_message(chat_id, f"Ahhh too much going on at once!")
         return
 
     # grabbing counts from db
-    table_name = f"{message.chat.id}"
+    table_name = f"{chat_id}"
     create_table(table_name)
     # tracked_counts = tracked_counts_all_chats[message.chat.id] if message.chat.id in tracked_counts_all_chats else {}
 
@@ -70,7 +70,7 @@ def track_spaces(message, slot):
         count = get_count(table_name, slot['date'])
         if count != space_count:
             put_item(table_name, slot['date'], space_count)
-            bot.send_message(message.chat.id, f"Tracking {slot['date']} slot\nCurrently {space_count} spaces available")
+            bot.send_message(chat_id, f"Tracking {slot['date']} slot\nCurrently {space_count} spaces available")
     except ClientError:
         put_item(table_name, slot['date'], space_count)
     
@@ -81,10 +81,10 @@ def track_spaces(message, slot):
     
     
 def lambda_handler(event, context):
-        message = event["message"]
+        chat_id = event["chat_id"]
         slot = event["slot"]
     
-        track_spaces(message, slot)
+        track_spaces(chat_id, slot)
         
         return {
         'statusCode': 200,

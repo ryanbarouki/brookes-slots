@@ -8,6 +8,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, request
 import boto3
 from botocore.exceptions import ClientError
+import json
 
 load_dotenv()
 API_KEY = os.getenv("TELEGRAM-API-KEY")
@@ -118,6 +119,7 @@ def process_slot_choice(message, slots):
 
         lambda_client.add_permission(**permissionParams)
 
+        params = {'chat_id': message.chat.id, 'slot': slots[slot_id]}
         target_params = {
             'Rule': rule_name,
             'Targets': [
@@ -125,7 +127,7 @@ def process_slot_choice(message, slots):
                     'Id': f"{rule_name}-target",
                     'Arn': 'arn:aws:lambda:us-east-1:151419854330:function:test',
                     # 'Arn': 'arn:aws:lambda:us-east-1:151419854330:function:ScrapeBrookes',
-                    'Input': '{"data": "data for Scarpe Brookes"}'
+                    'Input': json.dumps(params)
                 }
             ]
         }
