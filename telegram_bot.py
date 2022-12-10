@@ -111,7 +111,7 @@ def process_slot_choice(message, slots):
         )
         permissionParams = {
             'Action': 'lambda:InvokeFunction',
-            'FunctionName': 'test',
+            'FunctionName': 'ScrapeBrookes',
             'Principal': 'events.amazonaws.com',
             'StatementId': rule_name,
             'SourceArn': rule['RuleArn'],
@@ -125,8 +125,7 @@ def process_slot_choice(message, slots):
             'Targets': [
                 {
                     'Id': f"{rule_name}-target",
-                    'Arn': 'arn:aws:lambda:us-east-1:151419854330:function:test',
-                    # 'Arn': 'arn:aws:lambda:us-east-1:151419854330:function:ScrapeBrookes',
+                    'Arn': 'arn:aws:lambda:us-east-1:151419854330:function:ScrapeBrookes',
                     'Input': json.dumps(params)
                 }
             ]

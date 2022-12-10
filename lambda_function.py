@@ -41,8 +41,6 @@ def get_count(table_name, date):
     )
     return int(response['Item']['count']['N'])
 
-
-
 def track_spaces(chat_id, slot):
 
     scraper = BrookesScraper(USER, PASSWORD)
@@ -73,12 +71,6 @@ def track_spaces(chat_id, slot):
             bot.send_message(chat_id, f"Tracking {slot['date']} slot\nCurrently {space_count} spaces available")
     except ClientError:
         put_item(table_name, slot['date'], space_count)
-    
-    return {
-        'statusCode': 200,
-        'body': json.dumps('Hello from Lambda! TEST TEST')
-    }
-    
     
 def lambda_handler(event, context):
         chat_id = event["chat_id"]
