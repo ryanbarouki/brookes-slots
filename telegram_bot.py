@@ -10,7 +10,7 @@ load_dotenv()
 API_KEY = os.getenv("TELEGRAM-API-KEY")
 USER = os.getenv("BROOKES-USERNAME")
 PASSWORD = os.getenv("BROOKES-PASSWORD")
-INTERVAL = os.getenv("INTERVAL")
+INTERVAL = int(os.getenv("INTERVAL"))
 PROCESSING_SLOT = False
 TRACKING_SPACES = False
 sched = BackgroundScheduler()
@@ -20,9 +20,12 @@ tracked_counts_all_chats = {}
 
 @bot.message_handler(commands=['reset'])
 def restart(message):
+    global PROCESSING_SLOT, TRACKING_SPACES
     sched.remove_all_jobs()
     tracked_counts_all_chats.clear()
     bot.reply_to(message, "Resetting the bot")
+    PROCESSING_SLOT = False
+    TRACKING_SPACES = False
 
 @bot.message_handler(commands=['help', 'start'])
 def start(message):

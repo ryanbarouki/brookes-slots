@@ -10,6 +10,7 @@ def click(form_id, button_id):
 class BrookesScraper:
     LOGIN_URL = "https://brookessport.leisurecloud.net/Book/mrmLogin.aspx"
     BOOKING_URL = "https://brookessport.leisurecloud.net/Book/mrmselectActivityGroup.aspx"
+    HEADINGTON_CLIMB = "ctl00$MainContent$activityGroupsGrid$ctrl0$lnkListCommand"
 
     def __init__(self, username, password) -> None:
         self.username = username
@@ -21,7 +22,7 @@ class BrookesScraper:
         # essentially click "Make a Booking"
         browser.go(BrookesScraper.BOOKING_URL)
         # click "Headington Climb"
-        click("1", "ctl00$MainContent$activityGroupsGrid$ctrl1$lnkListCommand")
+        click("1", BrookesScraper.HEADINGTON_CLIMB)
 
         soup = BeautifulSoup(browser.html, "html.parser")
         slots = []
@@ -77,7 +78,7 @@ class BrookesScraper:
         # essentially click "Make a Booking"
         browser.go(BrookesScraper.BOOKING_URL)
         # click "Headington Climb"
-        click("1", "ctl00$MainContent$activityGroupsGrid$ctrl1$lnkListCommand")
+        click("1", BrookesScraper.HEADINGTON_CLIMB)
         click("1", slot['id'])
         day = slot['date'].split(" ")[0]
         dates = self.get_dates(day)
