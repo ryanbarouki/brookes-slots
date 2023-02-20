@@ -5,6 +5,7 @@ import telebot
 import os
 from scrape_brookes import BrookesScraper
 from apscheduler.schedulers.background import BackgroundScheduler
+import time
 
 load_dotenv()
 API_KEY = os.getenv("TELEGRAM-API-KEY")
@@ -114,5 +115,19 @@ def tracking_spaces_job(message, slot):
     TRACKING_SPACES = False
 
 sched.start()
-bot.polling()
+
+while True:
+    try:    
+        status = "Connected"
+        bot.polling(none_stop=False, interval=1)
+
+    except:
+        status = "failure"
+        print(status)
+
+    else:
+        print(status)
+
+    time.sleep(1)
+
 
